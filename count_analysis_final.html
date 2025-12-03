@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚾ 各カウントにおける打者有利・投手有利の分析</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Kosugi Maru', 'Nunito', sans-serif;
+            background: #2d5a27;
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 40px,
+                    rgba(255,255,255,0.03) 40px,
+                    rgba(255,255,255,0.03) 80px
+                );
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ================================
+           スタート画面
+           ================================ */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a3a1a 0%, #2d5a27 50%, #1a3a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .start-screen.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        /* 野球場の装飾 */
+        .field-decoration {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 400px;
+            background: radial-gradient(ellipse at bottom, rgba(139, 90, 43, 0.3) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .baseball-float {
+            position: absolute;
+            font-size: 40px;
+            animation: float 4s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        .baseball-float:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .baseball-float:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
+        .baseball-float:nth-child(3) { bottom: 30%; left: 8%; animation-delay: 2s; }
+        .baseball-float:nth-child(4) { bottom: 20%; right: 10%; animation-delay: 0.5s; }
+        .baseball-float:nth-child(5) { top: 40%; left: 5%; animation-delay: 1.5s; }
+        .baseball-float:nth-child(6) { top: 15%; right: 8%; animation-delay: 2.5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* タイトルカード */
+        .title-card {
+            background: linear-gradient(145deg, #fff9e6, #f5f0d0);
+            border-radius: 30px;
+            padding: 50px 60px;
+            border: 6px solid #8b4513;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4), 12px 12px 0 #5d3a1a;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 20px;
+        }
+
+        .title-card::before {
+            content: '⚾';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.3));
+        }
+
+        .title-card h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: #2d5a27;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            line-height: 1.4;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .title-card .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* グループ情報 */
+        .group-box {
+            background: linear-gradient(180deg, #4a7c45, #3d6a38);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border: 3px solid #fff;
+        }
+
+        .group-box h3 {
+            color: #ffdd00;
+            font-size: 18px;
+            margin-bottom: 12px;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
+        .group-box .members {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* 説明テキスト */
+        .intro-text {
+            background: rgba(45, 90, 39, 0.1);
+            border-left: 4px solid #2d5a27;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .intro-text p {
+            color: #333;
+            font-size: 15px;
+            line-height: 2;
+            margin-bottom: 10px;
+        }
+
+        .intro-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .intro-text .highlight {
+            background: linear-gradient(transparent 60%, #a7f3d0 60%);
+            font-weight: 700;
+        }
+
+        /* スタートボタン */
+        .start-btn {
+            background: linear-gradient(180deg, #cc0000, #990000);
+            color: #fff;
+            border: none;
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 4px solid #fff;
+            box-shadow: 0 6px 0 #660000, 0 10px 20px rgba(0,0,0,0.3);
+            font-family: 'Kosugi Maru', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '▶';
+            margin-right: 15px;
+            font-size: 20px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 11px 0 #660000, 0 15px 30px rgba(0,0,0,0.4);
+            background: linear-gradient(180deg, #e60000, #aa0000);
+        }
+
+        .start-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #660000;
+        }
+
+        /* クレジット */
+        .credit-info {
+            margin-top: 25px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .credit-info span {
+            display: block;
+            margin: 5px 0;
+        }
+
+        /* ================================
+           メイン画面（既存のスタイル）
+           ================================ */
+        .main-container {
+            display: none;
+        }
+
+        .main-container.visible {
+            display: block;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 野球ボールの縫い目装飾 */
+        .baseball-stitch {
+            position: fixed;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: #f5f5dc;
+            border-radius: 50%;
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        .baseball-stitch::before {
+            content: '';
+            position: absolute;
+            top: 30%;
+            left: 10%;
+            width: 80%;
+            height: 40%;
+            border: 4px dashed #cc0000;
+            border-radius: 50%;
+            transform: rotate(-20deg);
+        }
+
+        /* グループ情報パネル */
+        .group-info {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 3px solid #8b4513;
+            box-shadow: 4px 4px 0 #5d3a1a;
+            z-index: 1000;
+            max-width: 280px;
+            font-size: 12px;
+        }
+
+        .group-info h4 {
+            color: #2d5a27;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #8b4513;
+            padding-bottom: 5px;
+        }
+
+        .group-info .members {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: linear-gradient(180deg, #1a3a1a 0%, #2d5a27 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 8px solid #8b4513;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        .scoreboard {
+            background: linear-gradient(180deg, #1a1a1a 0%, #333 100%);
+            border-radius: 15px;
+            padding: 20px 40px;
+            display: inline-block;
+            border: 4px solid #8b4513;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffdd00;
+            text-shadow: 2px 2px 0px #cc8800, 4px 4px 0px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            color: #7cfc00;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header .credit {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        /* ナビゲーション */
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            padding: 25px;
+            background: linear-gradient(180deg, #3d7a37, #2d5a27);
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f5f5dc;
+            color: #333;
+            border: 3px solid #8b4513;
+            box-shadow: 0 4px 0 #5d3a1a, 0 6px 10px rgba(0,0,0,0.3);
+            position: relative;
+            font-family: 'Kosugi Maru', sans-serif;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 0 #5d3a1a, 0 10px 15px rgba(0,0,0,0.3);
+        }
+
+        .nav-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #5d3a1a;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(180deg, #ff6b35, #e85a24);
+            color: #fff;
+            border-color: #cc4400;
+            box-shadow: 0 4px 0 #993300, 0 6px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-btn::before {
+            content: '⚾';
+            margin-right: 8px;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* セクション */
+        .section {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 発表用説明ボックス */
+        .presentation-script {
+            background: linear-gradient(135deg, #fff8e7, #fff3d0);
+            border: 3px solid #f59e0b;
+            border-radius: 15px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            position: relative;
+            box-shadow: 4px 4px 0 #d97706;
+        }
+
+        .presentation-script::before {
+            content: '🎤 発表';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #f59e0b;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .presentation-script p {
+            color: #333;
+            font-size: 16px;
+            line-height: 2;
+            margin: 0;
+        }
+
+        .presentation-script .highlight {
+            background: linear-gradient(transparent 60%, #fef08a 60%);
+            font-weight: 700;
+        }
+
+        /* 統計カード */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #fff9e6, #f5f0d0);
+            border-radius: 15px;
+            padding: 20px;
+            border: 4px solid #8b4513;
+            box-shadow: 5px 5px 0 #5d3a1a;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '⚾';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+        }
+
+        .stat-card:hover {
+            transform: rotate(-2deg) scale(1.02);
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 42px;
+            font-weight: 800;
+            color: #cc0000;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .stat-card .change {
+            font-size: 13px;
+            color: #228b22;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .stat-card .change.negative {
+            color: #cc0000;
+        }
+
+        /* チャートコンテナ */
+        .chart-container {
+            background: linear-gradient(180deg, #fff9e6, #f5f0d0);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 5px solid #8b4513;
+            box-shadow: 8px 8px 0 #5d3a1a;
+            position: relative;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, #8b4513, #8b4513 10px, transparent 10px, transparent 20px);
+            border-radius: 2px;
+        }
+
+        .chart-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2d5a27;
+            margin-bottom: 20px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-title::before {
+            content: '📊';
+            font-size: 28px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        /* ヒートマップ */
+        .heatmap-container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .heatmap-wrapper {
+            background: linear-gradient(180deg, #4a7c45, #3d6a38);
+            padding: 30px;
+            border-radius: 15px;
+            border: 4px solid #fff;
+            box-shadow: 0 0 0 4px #8b4513;
+        }
+
+        .heatmap {
+            display: grid;
+            grid-template-columns: 60px repeat(3, 90px);
+            gap: 6px;
+        }
+
+        .heatmap-cell {
+            width: 90px;
+            height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .heatmap-cell .count-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 2px;
+            color: #fff;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .heatmap-cell .count-value {
+            font-size: 22px;
+            color: #fff;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+        }
+
+        .heatmap-header {
+            width: 90px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .heatmap-row-header {
+            width: 60px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .heatmap-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            background: #fff9e6;
+            border-radius: 15px;
+            border: 3px solid #8b4513;
+        }
+
+        .heatmap-legend h4 {
+            color: #2d5a27;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 2px solid rgba(0,0,0,0.2);
+        }
+
+        /* カウント選択ボタン */
+        .count-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 25px 0;
+            padding: 25px;
+            background: linear-gradient(180deg, #3d7a37, #2d5a27);
+            border-radius: 15px;
+            border: 4px solid #8b4513;
+        }
+
+        .count-selector-label {
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .count-btn {
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f5f5dc;
+            color: #333;
+            border: 4px solid #8b4513;
+            box-shadow: 0 4px 0 #5d3a1a, inset 0 -4px 0 rgba(0,0,0,0.1);
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .count-btn:hover {
+            transform: translateY(-5px) rotate(5deg);
+            box-shadow: 0 8px 0 #5d3a1a;
+        }
+
+        .count-btn.active {
+            background: linear-gradient(180deg, #ff6b35, #e85a24);
+            color: #fff;
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        .count-btn.pitcher-advantage {
+            background: linear-gradient(180deg, #ffcccc, #ffaaaa);
+        }
+
+        .count-btn.batter-advantage {
+            background: linear-gradient(180deg, #ccffcc, #aaffaa);
+        }
+
+        /* 詳細パネル */
+        .detail-panel {
+            background: linear-gradient(145deg, #fff, #f5f0e0);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 20px;
+            border: 5px solid #8b4513;
+            box-shadow: 8px 8px 0 #5d3a1a;
+            position: relative;
+        }
+
+        .detail-panel::before {
+            content: '🧢';
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 40px;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #2d5a27;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .detail-title .count-badge {
+            background: linear-gradient(180deg, #cc0000, #990000);
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 22px;
+            color: #fff;
+            border: 3px solid #fff;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: linear-gradient(180deg, #4a7c45, #3d6a38);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 3px solid #fff;
+            box-shadow: 3px 3px 0 #2d5a27;
+        }
+
+        .detail-item .label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .detail-item .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffdd00;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        }
+
+        /* グリッドレイアウト */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .group-info {
+                position: relative;
+                top: 0;
+                left: 0;
+                max-width: 100%;
+                margin-bottom: 15px;
+            }
+            .title-card {
+                padding: 30px 20px;
+            }
+            .title-card h1 {
+                font-size: 22px;
+            }
+        }
+
+        /* まとめセクション */
+        .summary-card {
+            background: linear-gradient(145deg, #fff9e6, #f5f0d0);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 4px solid #8b4513;
+            box-shadow: 5px 5px 0 #5d3a1a;
+            position: relative;
+        }
+
+        .summary-card h3 {
+            color: #2d5a27;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 3px dashed #8b4513;
+            padding-bottom: 10px;
+        }
+
+        .summary-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .summary-card li {
+            padding: 12px 0;
+            border-bottom: 2px dotted #ccc;
+            color: #333;
+            font-size: 15px;
+            line-height: 1.7;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .summary-card li::before {
+            content: '⚾';
+            position: absolute;
+            left: 0;
+            font-size: 14px;
+        }
+
+        .summary-card li:last-child {
+            border-bottom: none;
+        }
+
+        .summary-card li strong {
+            color: #cc0000;
+        }
+
+        .highlight-red { color: #cc0000; font-weight: 700; }
+        .highlight-green { color: #228b22; font-weight: 700; }
+        .highlight-blue { color: #0066cc; font-weight: 700; }
+
+        /* フッター */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(180deg, #1a3a1a, #0d1f0d);
+            color: #7cfc00;
+            font-size: 13px;
+            border-top: 5px solid #8b4513;
+            margin-top: 40px;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        /* マスコット */
+        .mascot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 60px;
+            animation: bounce 2s infinite;
+            z-index: 100;
+            cursor: pointer;
+            filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.3));
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .mascot:hover {
+            animation: spin 0.5s ease;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* セクション番号 */
+        .section-number {
+            display: inline-block;
+            background: linear-gradient(180deg, #cc0000, #990000);
+            color: #fff;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: 800;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ================================
+         スタート画面
+         ================================ -->
+    <div class="start-screen" id="startScreen">
+        <!-- 浮遊する野球ボール -->
+        <div class="baseball-float">⚾</div>
+        <div class="baseball-float">⚾</div>
+        <div class="baseball-float">⚾</div>
+        <div class="baseball-float">⚾</div>
+        <div class="baseball-float">⚾</div>
+        <div class="baseball-float">⚾</div>
+        
+        <!-- 野球場装飾 -->
+        <div class="field-decoration"></div>
+
+        <!-- タイトルカード -->
+        <div class="title-card">
+            <h1>各カウントにおける<br>打者有利・投手有利の分析</h1>
+            <p class="subtitle">NPB 2025シーズン 一軍公式戦データ分析</p>
+
+            <!-- グループ情報 -->
+            <div class="group-box">
+                <h3>👥 グループ13・14</h3>
+                <div class="members">
+                    桐山 夢叶、平 偉倫、國谷 樹希、小島 充貴、辻村 皇<br>
+                    藤代 華寿仁、内田 幸輝、坂内 奏斗、朝倉 大翔、篠澤 大輝
+                </div>
+            </div>
+
+            <!-- 説明テキスト -->
+            <div class="intro-text">
+                <p>
+                    皆さん、こんにちは。私たちグループ13・14は、<span class="highlight">「カウントがプレーに与える影響」</span>というテーマで分析を行いました。
+                </p>
+                <p>
+                    今回の発表では、上学期に学んだ<span class="highlight">HTML</span>や<span class="highlight">WebXR/Three.js(A-Frame)</span>などのCSVデータ可視化技術を活用し、<span class="highlight">Claudeの支援</span>を受けながらこのインタラクティブなWebサイトを制作しました。
+                </p>
+                <p>
+                    それでは、NPB 2025シーズンの<span class="highlight">約25万球</span>のデータ分析結果をご覧ください。
+                </p>
+            </div>
+
+            <!-- スタートボタン -->
+            <button class="start-btn" id="startBtn">発表スタート</button>
+
+            <!-- クレジット -->
+            <div class="credit-info">
+                <span>🎓 武蔵野大学 データサイエンスプログラミングII</span>
+                <span>💻 HTML制作：平 偉倫</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================
+         メイン画面
+         ================================ -->
+    <div class="main-container" id="mainContainer">
+        <!-- 装飾 -->
+        <div class="baseball-stitch"></div>
+        <div class="mascot" title="プレイボール！">⚾</div>
+
+        <!-- グループ情報 -->
+        <div class="group-info">
+            <h4>👥 グループ13・14</h4>
+            <div class="members">
+                桐山 夢叶、平 偉倫、國谷 樹希、小島 充貴、辻村 皇、藤代 華寿仁、内田 幸輝、坂内 奏斗、朝倉 大翔、篠澤 大輝
+            </div>
+        </div>
+
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="scoreboard">
+                <h1>⚾ 各カウントにおける打者有利・投手有利の分析 ⚾</h1>
+                <p class="subtitle">NPB 2025シーズン 一軍公式戦データ分析</p>
+                <p class="credit">HTML制作：平 偉倫</p>
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <nav class="nav-container">
+            <button class="nav-btn active" data-section="batting">打撃成績</button>
+            <button class="nav-btn" data-section="swing">スイング傾向</button>
+            <button class="nav-btn" data-section="pitch">球種選択</button>
+            <button class="nav-btn" data-section="summary">まとめ</button>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            
+            <!-- セクション1: 打撃成績 -->
+            <section id="batting" class="section active">
+                <div class="presentation-script">
+                    <p>
+                        <span class="section-number">1</span>まず、カウント別の<span class="highlight">打撃成績</span>を見ていきます。<br><br>
+                        結論から言うと、カウントによって打率は<span class="highlight">大きく変わります</span>。
+                    </p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="label">🔴 投手有利カウント打率</div>
+                        <div class="value">.197</div>
+                        <div class="change negative">三振率 33.6%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">🟢 打者有利カウント打率</div>
+                        <div class="value">.280</div>
+                        <div class="change">四球率 22.6%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">📊 打率の差</div>
+                        <div class="value">+.083</div>
+                        <div class="change">42%の差！</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">👑 最高打率カウント</div>
+                        <div class="value">3-1</div>
+                        <div class="change">.330</div>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        上のカードを見てください。<br><br>
+                        投手有利カウント（2ストライクに追い込まれた状態）では打率が<span class="highlight">.197</span>しかありません。<br>
+                        一方、打者有利カウント（ボール先行の状態）では打率が<span class="highlight">.280</span>まで上がります。<br><br>
+                        その差は<span class="highlight">.083</span>、つまり<span class="highlight">約42%</span>も打率が変わるんです。
+                    </p>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">カウント別打率ヒートマップ</h3>
+                    <div class="heatmap-container">
+                        <div class="heatmap-wrapper">
+                            <div class="heatmap" id="batting-heatmap">
+                                <div class="heatmap-row-header"></div>
+                                <div class="heatmap-header">0S</div>
+                                <div class="heatmap-header">1S</div>
+                                <div class="heatmap-header">2S</div>
+                                <div class="heatmap-row-header">0B</div>
+                                <div class="heatmap-cell" data-count="0-0"><span class="count-label">0-0</span><span class="count-value">.327</span></div>
+                                <div class="heatmap-cell" data-count="0-1"><span class="count-label">0-1</span><span class="count-value">.303</span></div>
+                                <div class="heatmap-cell" data-count="0-2"><span class="count-label">0-2</span><span class="count-value">.146</span></div>
+                                <div class="heatmap-row-header">1B</div>
+                                <div class="heatmap-cell" data-count="1-0"><span class="count-label">1-0</span><span class="count-value">.323</span></div>
+                                <div class="heatmap-cell" data-count="1-1"><span class="count-label">1-1</span><span class="count-value">.311</span></div>
+                                <div class="heatmap-cell" data-count="1-2"><span class="count-label">1-2</span><span class="count-value">.174</span></div>
+                                <div class="heatmap-row-header">2B</div>
+                                <div class="heatmap-cell" data-count="2-0"><span class="count-label">2-0</span><span class="count-value">.316</span></div>
+                                <div class="heatmap-cell" data-count="2-1"><span class="count-label">2-1</span><span class="count-value">.326</span></div>
+                                <div class="heatmap-cell" data-count="2-2"><span class="count-label">2-2</span><span class="count-value">.191</span></div>
+                                <div class="heatmap-row-header">3B</div>
+                                <div class="heatmap-cell" data-count="3-0"><span class="count-label">3-0</span><span class="count-value">.315</span></div>
+                                <div class="heatmap-cell" data-count="3-1"><span class="count-label">3-1</span><span class="count-value">.330</span></div>
+                                <div class="heatmap-cell" data-count="3-2"><span class="count-label">3-2</span><span class="count-value">.205</span></div>
+                            </div>
+                        </div>
+                        <div class="heatmap-legend">
+                            <h4>📖 色の見方</h4>
+                            <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #22c55e, #16a34a);"></div>高打率 (.300以上)</div>
+                            <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #facc15, #eab308);"></div>中打率 (.250-.299)</div>
+                            <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #f97316, #ea580c);"></div>やや低い (.200-.249)</div>
+                            <div class="legend-item"><div class="legend-color" style="background: linear-gradient(180deg, #ef4444, #dc2626);"></div>低打率 (.200未満)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        このヒートマップは、縦軸がボール数、横軸がストライク数です。<br>
+                        緑色は打率が高く、赤色は打率が低いことを示しています。<br><br>
+                        注目してほしいのは<span class="highlight">右端の列（2ストライク）</span>です。全て赤やオレンジになっていますね。<br>
+                        特に<span class="highlight">0-2の打率は.146</span>、<span class="highlight">1-2は.174</span>と、2割を大きく下回っています。<br><br>
+                        一方、<span class="highlight">3-1の打率は.330</span>で、全カウント中最高です。
+                    </p>
+                </div>
+
+                <div class="count-selector">
+                    <div class="count-selector-label">🎯 カウントをクリックして詳細を確認！</div>
+                    <button class="count-btn pitcher-advantage" data-count="0-2">0-2</button>
+                    <button class="count-btn pitcher-advantage" data-count="1-2">1-2</button>
+                    <button class="count-btn pitcher-advantage" data-count="2-2">2-2</button>
+                    <button class="count-btn" data-count="0-0">0-0</button>
+                    <button class="count-btn" data-count="0-1">0-1</button>
+                    <button class="count-btn" data-count="1-1">1-1</button>
+                    <button class="count-btn batter-advantage" data-count="1-0">1-0</button>
+                    <button class="count-btn batter-advantage" data-count="2-0">2-0</button>
+                    <button class="count-btn batter-advantage" data-count="2-1">2-1</button>
+                    <button class="count-btn batter-advantage" data-count="3-0">3-0</button>
+                    <button class="count-btn batter-advantage active" data-count="3-1">3-1</button>
+                    <button class="count-btn batter-advantage" data-count="3-2">3-2</button>
+                </div>
+
+                <div class="detail-panel" id="count-detail">
+                    <div class="detail-title">
+                        <span class="count-badge" id="selected-count">3-1</span>
+                        <span>カウント詳細データ</span>
+                    </div>
+                    <div class="detail-grid" id="detail-grid"></div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        ここでは各カウントの詳細データを確認できます。<br><br>
+                        ピンク色のボタンは<span class="highlight">投手有利カウント</span>、緑色は<span class="highlight">打者有利カウント</span>を示しています。<br><br>
+                        例えば0-2をクリックすると、三振率が<span class="highlight">47.76%</span>もあることがわかります。<br><br>
+                        では次に、「スイング傾向」を見ていきましょう。
+                    </p>
+                </div>
+            </section>
+
+            <!-- セクション2: スイング傾向 -->
+            <section id="swing" class="section">
+                <div class="presentation-script">
+                    <p>
+                        <span class="section-number">2</span>次に、カウントによって<span class="highlight">打者のスイング傾向</span>がどう変わるかを分析しました。
+                    </p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="label">😌 0ストライク時</div>
+                        <div class="value">33.1%</div>
+                        <div class="change">まだ様子見</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">😰 2ストライク時</div>
+                        <div class="value">63.5%</div>
+                        <div class="change negative">+30.4pt上昇！</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">🔥 フルカウント時</div>
+                        <div class="value">74.4%</div>
+                        <div class="change">最高値</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">🎁 3-0の時</div>
+                        <div class="value">8.7%</div>
+                        <div class="change">四球狙い</div>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        追い込まれるとスイング率が<span class="highlight">約2倍</span>になります。<br><br>
+                        0ストライク時は33.1%ですが、2ストライクになると63.5%まで上がります。<br>
+                        打者は「振らないと三振してしまう」というプレッシャーがあるんですね。<br><br>
+                        逆に3-0のときはスイング率がわずか<span class="highlight">8.7%</span>。四球を狙っているからです。
+                    </p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="chart-container">
+                        <h3 class="chart-title">ストライク数別スイング率</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="strikeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3 class="chart-title">ボール数別ゾーン内率</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="ballChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        左のグラフは<span class="highlight">ストライク数が増えるとスイング率が上がる</span>ことを示しています。<br><br>
+                        右のグラフで注目してほしいのは<span class="highlight">ゾーン内率</span>（緑の線）です。<br>
+                        ボール数が増えると、投手はストライクゾーンに投げる割合が高くなります。<br>
+                        0ボール時は45.2%ですが、3ボール時は<span class="highlight">57.4%</span>まで上がります。<br><br>
+                        つまり、ボール先行になると投手は「ストライクを取りに来る」ので、打者は狙い球を絞りやすくなるんです。
+                    </p>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">全カウント スイング率比較</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="swingRateChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        このグラフは全12カウントのスイング率を比較しています。<br><br>
+                        <span class="highlight">3-2（フルカウント）が74.4%で最高</span>、<span class="highlight">3-0が8.7%で最低</span>です。<br><br>
+                        では次に、投手側の視点から「球種選択」を見ていきましょう。
+                    </p>
+                </div>
+            </section>
+
+            <!-- セクション3: 球種選択 -->
+            <section id="pitch" class="section">
+                <div class="presentation-script">
+                    <p>
+                        <span class="section-number">3</span>ここでは、カウントによって<span class="highlight">投手の球種選択</span>がどう変わるかを分析しました。
+                    </p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="label">⚡ 0S時ストレート</div>
+                        <div class="value">45.2%</div>
+                        <div class="change">基本の組み立て</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">🎣 2S時フォーク</div>
+                        <div class="value">17.4%</div>
+                        <div class="change negative">0Sの2倍以上！</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">💨 3-0時ストレート</div>
+                        <div class="value">79.9%</div>
+                        <div class="change">ほぼストレート</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">🌀 2S時カーブ</div>
+                        <div class="value">5.1%</div>
+                        <div class="change">決め球には使わない</div>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        投手は追い込むと<span class="highlight">フォークやチェンジアップ</span>など、落ちる球の割合を増やします。<br><br>
+                        フォークの割合は0ストライク時の8.0%から、2ストライク時は<span class="highlight">17.4%</span>と2倍以上になります。<br>
+                        逆にカーブは7.4%から5.1%に減少します。決め球としては使いにくいんですね。
+                    </p>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">ストライク数別 球種選択割合</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="pitchTypeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        このグラフを見ると、<span class="highlight">緑色のフォーク</span>が2ストライクで大きく増えているのがわかります。<br><br>
+                        投手は追い込んでから変化球で仕留めるという戦略をとっているんですね。
+                    </p>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">カウント別 ストレート比率の変化</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="fastballRateChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        こちらはカウント別のストレート比率です。<br><br>
+                        注目は<span class="highlight">3-0</span>のときで、なんと<span class="highlight">79.9%</span>がストレートです。<br>
+                        投手は「とにかくストライクを取りたい」ので、コントロールしやすいストレートを選ぶんです。<br><br>
+                        では最後に、まとめを見ていきましょう。
+                    </p>
+                </div>
+            </section>
+
+            <!-- セクション4: まとめ -->
+            <section id="summary" class="section">
+                <div class="presentation-script">
+                    <p>
+                        <span class="section-number">4</span>最後に、今回の分析で得られた<span class="highlight">主な発見</span>をまとめます。
+                    </p>
+                </div>
+
+                <div class="summary-card">
+                    <h3>🏆 主な発見</h3>
+                    <ul>
+                        <li><strong>カウントで打率は42%も変わる</strong> — 投手有利(.197) vs 打者有利(.280)</li>
+                        <li><strong>2ストライクで三振率が急増</strong> — 0-2で47.8%、1-2で41.3%</li>
+                        <li><strong>3-0は四球率89.9%</strong> — ほとんどの打者が四球を狙う</li>
+                        <li><strong>3-1が最高打率.330</strong> — 打者にとって最も有利なカウント</li>
+                    </ul>
+                </div>
+
+                <div class="summary-card">
+                    <h3>🎯 投手の戦略変化</h3>
+                    <ul>
+                        <li><strong>追い込み後はフォーク倍増</strong> — 0S時8.0% → 2S時17.4%</li>
+                        <li><strong>ボール先行でストレート増加</strong> — 3-0時は約80%がストレート</li>
+                        <li><strong>追い込むほどゾーン内に投げてくる</strong> — 打者は振らざるを得ない</li>
+                    </ul>
+                </div>
+
+                <div class="summary-card">
+                    <h3>🏃 打者の行動変化</h3>
+                    <ul>
+                        <li><strong>追い込まれるとスイング率2倍</strong> — 33.1% → 63.5%</li>
+                        <li><strong>フルカウントで最大スイング率74.4%</strong> — 見逃し三振は避けたい</li>
+                        <li><strong>3-0ではほとんど振らない</strong> — スイング率わずか8.7%</li>
+                    </ul>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">投手有利 vs 打者有利 総合比較</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="summaryRadar"></canvas>
+                    </div>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        このレーダーチャートは、投手有利カウントと打者有利カウントの違いを視覚化したものです。<br><br>
+                        <span class="highlight">緑（打者有利）</span>は打率やゾーン内率、四球率が高く、<br>
+                        <span class="highlight">赤（投手有利）</span>はスイング率が高いものの、結果につながっていないことがわかります。
+                    </p>
+                </div>
+
+                <div class="summary-card">
+                    <h3>💡 結論</h3>
+                    <ul>
+                        <li><strong>野球はカウントで大きく変わる</strong> — 同じ投手・打者でも状況次第</li>
+                        <li><strong>投手は早めに追い込むことが重要</strong> — 2ストライクで圧倒的有利に</li>
+                        <li><strong>打者は有利カウントを逃さない</strong> — 3-1は最大のチャンス</li>
+                        <li><strong>観戦時のポイント</strong> — カウントを意識すると野球がもっと面白くなる！</li>
+                    </ul>
+                </div>
+
+                <div class="presentation-script">
+                    <p>
+                        以上で私たちの発表を終わります。<br><br>
+                        今回の分析を通じて、<span class="highlight">カウントが野球の結果に大きな影響を与えている</span>ことがデータで確認できました。<br><br>
+                        野球を観戦するとき、ぜひカウントに注目してみてください。<br><br>
+                        ご清聴ありがとうございました。
+                    </p>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <p>⚾ データ出典: NPB 2025シーズン 一軍公式戦（データスタジアム株式会社提供）</p>
+            <p>🎓 武蔵野大学 データサイエンスプログラミングII 野球データ分析演習</p>
+            <p>👥 グループ13・14</p>
+        </footer>
+    </div>
+
+    <script>
+        // ================================
+        // スタート画面の制御
+        // ================================
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const startScreen = document.getElementById('startScreen');
+            const mainContainer = document.getElementById('mainContainer');
+            
+            startScreen.classList.add('hidden');
+            
+            setTimeout(() => {
+                mainContainer.classList.add('visible');
+            }, 400);
+        });
+
+        // ================================
+        // データ定義
+        // ================================
+        const countData = {
+            '0-0': { pa: 7718, ab: 6747, h: 2209, avg: .327, hr: 227, bb: 186, so: 0, bb_rate: 2.41, so_rate: 0.00, swing_rate: 30.2, contact_rate: 75.6, zone_rate: 52.6, whiff_rate: 24.4 },
+            '0-1': { pa: 5798, ab: 5535, h: 1677, avg: .303, hr: 104, bb: 1, so: 0, bb_rate: 0.02, so_rate: 0.00, swing_rate: 46.6, contact_rate: 75.6, zone_rate: 40.4, whiff_rate: 24.4 },
+            '0-2': { pa: 5486, ab: 5420, h: 794, avg: .146, hr: 18, bb: 0, so: 2620, bb_rate: 0.00, so_rate: 47.76, swing_rate: 49.4, contact_rate: 74.9, zone_rate: 25.3, whiff_rate: 25.1 },
+            '1-0': { pa: 4275, ab: 4002, h: 1291, avg: .323, hr: 133, bb: 12, so: 0, bb_rate: 0.28, so_rate: 0.00, swing_rate: 42.0, contact_rate: 77.6, zone_rate: 57.1, whiff_rate: 22.4 },
+            '1-1': { pa: 5696, ab: 5478, h: 1703, avg: .311, hr: 141, bb: 2, so: 0, bb_rate: 0.04, so_rate: 0.00, swing_rate: 55.0, contact_rate: 78.2, zone_rate: 48.8, whiff_rate: 21.8 },
+            '1-2': { pa: 10576, ab: 10418, h: 1809, avg: .174, hr: 77, bb: 0, so: 4364, bb_rate: 0.00, so_rate: 41.26, swing_rate: 62.0, contact_rate: 78.2, zone_rate: 34.7, whiff_rate: 21.8 },
+            '2-0': { pa: 1155, ab: 1076, h: 340, avg: .316, hr: 49, bb: 36, so: 0, bb_rate: 3.12, so_rate: 0.00, swing_rate: 35.6, contact_rate: 79.9, zone_rate: 61.9, whiff_rate: 20.1 },
+            '2-1': { pa: 3083, ab: 3009, h: 982, avg: .326, hr: 94, bb: 4, so: 0, bb_rate: 0.13, so_rate: 0.00, swing_rate: 59.1, contact_rate: 79.6, zone_rate: 55.7, whiff_rate: 20.4 },
+            '2-2': { pa: 9536, ab: 9413, h: 1795, avg: .191, hr: 108, bb: 0, so: 3572, bb_rate: 0.00, so_rate: 37.46, swing_rate: 70.5, contact_rate: 81.0, zone_rate: 44.3, whiff_rate: 19.0 },
+            '3-0': { pa: 802, ab: 73, h: 23, avg: .315, hr: 8, bb: 721, so: 0, bb_rate: 89.90, so_rate: 0.00, swing_rate: 8.7, contact_rate: 82.4, zone_rate: 67.3, whiff_rate: 17.6 },
+            '3-1': { pa: 2300, ab: 994, h: 328, avg: .330, hr: 45, bb: 1277, so: 0, bb_rate: 55.52, so_rate: 0.00, swing_rate: 48.6, contact_rate: 82.4, zone_rate: 61.9, whiff_rate: 17.6 },
+            '3-2': { pa: 7753, ab: 5367, h: 1102, avg: .205, hr: 92, bb: 2320, so: 1919, bb_rate: 29.92, so_rate: 24.75, swing_rate: 74.4, contact_rate: 83.3, zone_rate: 53.6, whiff_rate: 16.7 }
+        };
+
+        // Chart.js グローバル設定
+        Chart.defaults.font.family = "'Kosugi Maru', 'Nunito', sans-serif";
+        Chart.defaults.color = '#333';
+
+        // ================================
+        // ナビゲーション
+        // ================================
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(btn.dataset.section).classList.add('active');
+                
+                if (btn.dataset.section === 'swing') {
+                    setTimeout(() => {
+                        createStrikeChart();
+                        createBallChart();
+                        createSwingRateChart();
+                    }, 100);
+                } else if (btn.dataset.section === 'pitch') {
+                    setTimeout(() => {
+                        createPitchTypeChart();
+                        createFastballRateChart();
+                    }, 100);
+                } else if (btn.dataset.section === 'summary') {
+                    setTimeout(() => {
+                        createSummaryRadar();
+                    }, 100);
+                }
+            });
+        });
+
+        // ================================
+        // ヒートマップの色付け
+        // ================================
+        function colorHeatmap() {
+            document.querySelectorAll('.heatmap-cell').forEach(cell => {
+                const count = cell.dataset.count;
+                if (count && countData[count]) {
+                    const avg = countData[count].avg;
+                    let gradient;
+                    if (avg >= 0.300) {
+                        gradient = 'linear-gradient(180deg, #22c55e, #16a34a)';
+                    } else if (avg >= 0.250) {
+                        gradient = 'linear-gradient(180deg, #facc15, #eab308)';
+                    } else if (avg >= 0.200) {
+                        gradient = 'linear-gradient(180deg, #f97316, #ea580c)';
+                    } else {
+                        gradient = 'linear-gradient(180deg, #ef4444, #dc2626)';
+                    }
+                    cell.style.background = gradient;
+                }
+            });
+        }
+
+        // ================================
+        // カウント選択
+        // ================================
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateDetailPanel(btn.dataset.count);
+            });
+        });
+
+        function updateDetailPanel(count) {
+            const data = countData[count];
+            document.getElementById('selected-count').textContent = count;
+            
+            const grid = document.getElementById('detail-grid');
+            grid.innerHTML = `
+                <div class="detail-item">
+                    <div class="label">打率</div>
+                    <div class="value">${data.avg.toFixed(3)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">打席数</div>
+                    <div class="value">${data.pa.toLocaleString()}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">本塁打</div>
+                    <div class="value">${data.hr}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">四球率</div>
+                    <div class="value">${data.bb_rate}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">三振率</div>
+                    <div class="value">${data.so_rate}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">スイング率</div>
+                    <div class="value">${data.swing_rate}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">コンタクト率</div>
+                    <div class="value">${data.contact_rate}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">ゾーン内率</div>
+                    <div class="value">${data.zone_rate}%</div>
+                </div>
+            `;
+        }
+
+        // ================================
+        // チャート作成
+        // ================================
+        let charts = {};
+
+        function createStrikeChart() {
+            if (charts.strikeChart) charts.strikeChart.destroy();
+            
+            const ctx = document.getElementById('strikeChart').getContext('2d');
+            charts.strikeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0ストライク', '1ストライク', '2ストライク'],
+                    datasets: [{
+                        label: 'スイング率 (%)',
+                        data: [33.1, 51.7, 63.5],
+                        backgroundColor: ['#22c55e', '#facc15', '#ef4444'],
+                        borderColor: ['#16a34a', '#eab308', '#dc2626'],
+                        borderWidth: 3,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, max: 80, grid: { color: 'rgba(0,0,0,0.1)' } }
+                    }
+                }
+            });
+        }
+
+        function createBallChart() {
+            if (charts.ballChart) charts.ballChart.destroy();
+            
+            const ctx = document.getElementById('ballChart').getContext('2d');
+            charts.ballChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0ボール', '1ボール', '2ボール', '3ボール'],
+                    datasets: [{
+                        label: 'スイング率 (%)',
+                        data: [37.7, 53.2, 60.6, 59.8],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 8,
+                        pointBackgroundColor: '#ef4444'
+                    }, {
+                        label: 'ゾーン内率 (%)',
+                        data: [45.2, 46.7, 51.0, 57.4],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 8,
+                        pointBackgroundColor: '#22c55e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 12, weight: 'bold' } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 80, grid: { color: 'rgba(0,0,0,0.1)' } }
+                    }
+                }
+            });
+        }
+
+        function createSwingRateChart() {
+            if (charts.swingRateChart) charts.swingRateChart.destroy();
+            
+            const counts = Object.keys(countData);
+            const swingRates = counts.map(c => countData[c].swing_rate);
+            const colors = counts.map(c => {
+                if (['0-2', '1-2', '2-2'].includes(c)) return '#ef4444';
+                if (['2-0', '3-0', '3-1', '3-2', '1-0', '2-1'].includes(c)) return '#22c55e';
+                return '#facc15';
+            });
+            
+            const ctx = document.getElementById('swingRateChart').getContext('2d');
+            charts.swingRateChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: counts,
+                    datasets: [{
+                        label: 'スイング率 (%)',
+                        data: swingRates,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.1)' } }
+                    }
+                }
+            });
+        }
+
+        function createPitchTypeChart() {
+            if (charts.pitchTypeChart) charts.pitchTypeChart.destroy();
+            
+            const ctx = document.getElementById('pitchTypeChart').getContext('2d');
+            charts.pitchTypeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0ストライク', '1ストライク', '2ストライク'],
+                    datasets: [
+                        { label: 'ストレート', data: [45.2, 40.9, 41.2], backgroundColor: '#ef4444', borderRadius: 4 },
+                        { label: 'スライダー', data: [14.0, 13.4, 14.5], backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'フォーク', data: [8.0, 12.1, 17.4], backgroundColor: '#22c55e', borderRadius: 4 },
+                        { label: 'カットボール', data: [10.6, 10.2, 7.8], backgroundColor: '#f59e0b', borderRadius: 4 },
+                        { label: 'チェンジアップ', data: [5.6, 7.3, 8.0], backgroundColor: '#8b5cf6', borderRadius: 4 },
+                        { label: 'カーブ', data: [7.4, 6.7, 5.1], backgroundColor: '#ec4899', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 11, weight: 'bold' } } }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, max: 100, grid: { color: 'rgba(0,0,0,0.1)' } }
+                    }
+                }
+            });
+        }
+
+        function createFastballRateChart() {
+            if (charts.fastballRateChart) charts.fastballRateChart.destroy();
+            
+            const fastballByCount = {
+                '0-0': 44.4, '0-1': 40.4, '0-2': 43.0,
+                '1-0': 41.6, '1-1': 37.2, '1-2': 38.6,
+                '2-0': 53.5, '2-1': 43.7, '2-2': 39.9,
+                '3-0': 79.9, '3-1': 57.1, '3-2': 47.1
+            };
+            
+            const counts = Object.keys(fastballByCount);
+            const rates = Object.values(fastballByCount);
+            
+            const ctx = document.getElementById('fastballRateChart').getContext('2d');
+            charts.fastballRateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: counts,
+                    datasets: [{
+                        label: 'ストレート比率 (%)',
+                        data: rates,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: '#ef4444',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { font: { size: 12, weight: 'bold' } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.1)' } }
+                    }
+                }
+            });
+        }
+
+        function createSummaryRadar() {
+            if (charts.summaryRadar) charts.summaryRadar.destroy();
+            
+            const ctx = document.getElementById('summaryRadar').getContext('2d');
+            charts.summaryRadar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['打率', 'スイング率', 'コンタクト率', 'ゾーン内率', '四球率'],
+                    datasets: [{
+                        label: '🔴 投手有利 (0-2, 1-2)',
+                        data: [
+                            ((.146 + .174) / 2) * 300,
+                            (49.4 + 62.0) / 2,
+                            (74.9 + 78.2) / 2,
+                            (25.3 + 34.7) / 2,
+                            0
+                        ],
+                        backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                        borderColor: '#ef4444',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ef4444',
+                        pointRadius: 6
+                    }, {
+                        label: '🟢 打者有利 (3-0, 3-1)',
+                        data: [
+                            ((.315 + .330) / 2) * 300,
+                            (8.7 + 48.6) / 2,
+                            (82.4 + 82.4) / 2,
+                            (67.3 + 61.9) / 2,
+                            (89.9 + 55.52) / 2
+                        ],
+                        backgroundColor: 'rgba(34, 197, 94, 0.3)',
+                        borderColor: '#22c55e',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#22c55e',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 14, weight: 'bold' } } }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { font: { size: 10 }, backdropColor: 'transparent' },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            pointLabels: { font: { size: 12, weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ================================
+        // 初期化
+        // ================================
+        document.addEventListener('DOMContentLoaded', () => {
+            colorHeatmap();
+            updateDetailPanel('3-1');
+        });
+    </script>
+</body>
+</html>

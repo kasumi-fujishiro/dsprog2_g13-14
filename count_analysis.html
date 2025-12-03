@@ -921,6 +921,123 @@
             margin-right: 10px;
             font-size: 18px;
         }
+
+        /* ================================
+           データ紹介セクション
+           ================================ */
+        .data-intro-section {
+            margin-bottom: 30px;
+        }
+
+        .data-stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .data-stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .data-stat-card {
+            background: linear-gradient(180deg, #fffef5, #f5f0d0);
+            border-radius: 15px;
+            padding: 20px;
+            border: 3px solid #8b4513;
+            box-shadow: 4px 4px 0 #5d3a1a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-stat-card::before {
+            content: '⚾';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 40px;
+            opacity: 0.15;
+        }
+
+        .data-stat-card .label {
+            font-size: 13px;
+            color: #2d5a27;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .data-stat-card .value {
+            font-size: 36px;
+            font-weight: 800;
+            color: #1a3a1a;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .data-stat-card .sub-label {
+            font-size: 12px;
+            color: #2d5a27;
+            font-weight: 600;
+        }
+
+        .data-explanation-box {
+            background: linear-gradient(180deg, #fffef5, #f5f0d0);
+            border-radius: 15px;
+            padding: 25px;
+            border: 3px solid #8b4513;
+            box-shadow: 4px 4px 0 #5d3a1a;
+        }
+
+        .data-explanation-box .section-tag {
+            display: inline-block;
+            background: linear-gradient(180deg, #ff6b35, #e85a24);
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .data-explanation-box p {
+            color: #333;
+            font-size: 15px;
+            line-height: 2;
+            margin-bottom: 10px;
+        }
+
+        .data-explanation-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* データソース説明 */
+        .data-source-note {
+            background: rgba(45, 90, 39, 0.08);
+            border-left: 4px solid #2d5a27;
+            padding: 15px 20px;
+            margin-top: 15px;
+            border-radius: 0 10px 10px 0;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .data-source-note strong {
+            color: #2d5a27;
+        }
+
+        .data-source-note code {
+            background: rgba(45, 90, 39, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #1a3a1a;
+        }
     </style>
 </head>
 <body>
@@ -1015,11 +1132,63 @@
             
             <!-- セクション1: 打撃成績 -->
             <section id="batting" class="section active">
+                <!-- データ紹介セクション -->
+                <div class="data-intro-section">
+                    <div class="data-stats-row">
+                        <div class="data-stat-card">
+                            <div class="label">📊 分析データ</div>
+                            <div class="value">254,361</div>
+                            <div class="sub-label">投球データ</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">⚾ 対象試合</div>
+                            <div class="value">858</div>
+                            <div class="sub-label">NPB一軍公式戦</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🏏 打席数</div>
+                            <div class="value">64,178</div>
+                            <div class="sub-label">全打席結果</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">📅 シーズン</div>
+                            <div class="value">2025</div>
+                            <div class="sub-label">最新データ</div>
+                        </div>
+                    </div>
+                    <div class="data-explanation-box">
+                        <span class="section-tag">🎤 発表</span>
+                        <p>
+                            まず、今回使用したデータについて説明します。
+                        </p>
+                        <p>
+                            2025年シーズンの一軍公式戦858試合、約25万球の投球データを分析しました。
+                        </p>
+                        <p>
+                            このデータには、各投球のカウント、球種、スイングの有無、打席結果など、詳細な情報が含まれています。
+                        </p>
+                        <p>
+                            それでは、分析結果を見ていきましょう。「打撃成績」ボタンをクリックしてください。
+                        </p>
+                        <div class="data-source-note">
+                            <strong>📁 データソース：</strong><br>
+                            総投球数：<code>is_pitch</code>列の合計（247,399件）<br>
+                            総打席数：<code>is_pa</code>列の合計（64,178件）<br>
+                            試合数：<code>game_id</code>のユニーク数（858試合）<br>
+                            シーズン：<code>game_year</code>列より（2025年）
+                        </div>
+                    </div>
+                </div>
+
                 <div class="presentation-script">
                     <p>
                         <span class="section-number">1</span>まず、カウント別の<span class="highlight">打撃成績</span>を見ていきます。<br><br>
                         結論から言うと、カウントによって打率は<span class="highlight">大きく変わります</span>。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        打率計算は <code>is_h</code>（安打）÷ <code>is_ab</code>（打数）、カウント別の集計は <code>pre_ball</code>（ボール数）と <code>pre_strike</code>（ストライク数）で分類
+                    </div>
                 </div>
 
                 <div class="stats-row">
@@ -1052,6 +1221,10 @@
                         一方、打者有利カウント（ボール先行の状態）では打率が<span class="highlight">.280</span>まで上がります。<br><br>
                         その差は<span class="highlight">.083</span>、つまり<span class="highlight">約42%</span>も打率が変わるんです。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        投手有利カウント（0-2, 1-2, 2-2）と打者有利カウント（1-0, 2-0, 2-1, 3-0, 3-1, 3-2）の打率は <code>pre_ball</code> と <code>pre_strike</code> でグループ化し、<code>is_h</code> ÷ <code>is_ab</code> で計算。三振率は <code>is_so</code> ÷ <code>is_pa</code>、四球率は <code>is_bb</code> ÷ <code>is_pa</code> で算出。
+                    </div>
                 </div>
 
                 <div class="chart-container">
@@ -1099,6 +1272,10 @@
                         特に<span class="highlight">0-2の打率は.146</span>、<span class="highlight">1-2は.174</span>と、2割を大きく下回っています。<br><br>
                         一方、<span class="highlight">3-1の打率は.330</span>で、全カウント中最高です。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        ヒートマップの各セルは <code>pre_ball</code>（0-3）と <code>pre_strike</code>（0-2）の組み合わせごとに、<code>is_h</code>（安打数）÷ <code>is_ab</code>（打数）で打率を計算。例：0-2カウントでは 794安打 ÷ 5,420打数 = .146
+                    </div>
                 </div>
 
                 <div class="count-selector">
@@ -1132,15 +1309,65 @@
                         例えば0-2をクリックすると、三振率が<span class="highlight">47.76%</span>もあることがわかります。<br><br>
                         では次に、「スイング傾向」を見ていきましょう。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        詳細パネルの各指標は以下の列から計算：打率=<code>is_h</code>÷<code>is_ab</code>、四球率=<code>is_bb</code>÷<code>is_pa</code>、三振率=<code>is_so</code>÷<code>is_pa</code>、スイング率=<code>is_swing</code>÷<code>is_pitch</code>、コンタクト率=<code>is_contact</code>÷<code>is_swing</code>、ゾーン内率=<code>in_strike_zone</code>÷<code>is_pitch</code>
+                    </div>
                 </div>
             </section>
 
             <!-- セクション2: スイング傾向 -->
             <section id="swing" class="section">
+                <!-- データ紹介セクション -->
+                <div class="data-intro-section">
+                    <div class="data-stats-row">
+                        <div class="data-stat-card">
+                            <div class="label">🔄 スイング数</div>
+                            <div class="value">118,308</div>
+                            <div class="sub-label">総スイング回数</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">✅ コンタクト数</div>
+                            <div class="value">92,410</div>
+                            <div class="sub-label">バットに当たった回数</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🎯 ゾーン内投球</div>
+                            <div class="value">117,576</div>
+                            <div class="sub-label">ストライクゾーン内</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">📈 平均スイング率</div>
+                            <div class="value">47.8%</div>
+                            <div class="sub-label">全投球に対する割合</div>
+                        </div>
+                    </div>
+                    <div class="data-explanation-box">
+                        <span class="section-tag">🎤 発表</span>
+                        <p>
+                            このセクションでは、打者のスイング傾向について分析します。
+                        </p>
+                        <p>
+                            スイング率、コンタクト率、ゾーン内率など、打者の行動パターンがカウントによってどう変化するかを見ていきます。
+                        </p>
+                        <div class="data-source-note">
+                            <strong>📁 データソース：</strong><br>
+                            スイング数：<code>is_swing</code>列の合計<br>
+                            コンタクト数：<code>is_contact</code>列の合計<br>
+                            ゾーン内投球：<code>in_strike_zone</code>列の合計<br>
+                            スイング率：<code>is_swing</code> ÷ <code>is_pitch</code> で計算
+                        </div>
+                    </div>
+                </div>
+
                 <div class="presentation-script">
                     <p>
                         <span class="section-number">2</span>次に、カウントによって<span class="highlight">打者のスイング傾向</span>がどう変わるかを分析しました。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        スイング率は <code>is_swing</code>（スイング有無）÷ <code>is_pitch</code>（投球数）、ストライク数別の集計は <code>pre_strike</code> で分類
+                    </div>
                 </div>
 
                 <div class="stats-row">
@@ -1173,6 +1400,10 @@
                         打者は「振らないと三振してしまう」というプレッシャーがあるんですね。<br><br>
                         逆に3-0のときはスイング率がわずか<span class="highlight">8.7%</span>。四球を狙っているからです。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        0ストライク時のスイング率（33.1%）：<code>pre_strike</code>=0 のデータで <code>is_swing</code>÷<code>is_pitch</code> を計算（32,559スイング ÷ 98,372投球）。2ストライク時（63.5%）：<code>pre_strike</code>=2 のデータで計算（46,861スイング ÷ 73,787投球）
+                    </div>
                 </div>
 
                 <div class="grid-2">
@@ -1198,6 +1429,10 @@
                         0ボール時は45.2%ですが、3ボール時は<span class="highlight">57.4%</span>まで上がります。<br><br>
                         つまり、ボール先行になると投手は「ストライクを取りに来る」ので、打者は狙い球を絞りやすくなるんです。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        左グラフ（ストライク別）：<code>pre_strike</code>（0,1,2）別に <code>is_swing</code>÷<code>is_pitch</code> を計算。右グラフ（ボール別）：<code>pre_ball</code>（0,1,2,3）別に、スイング率=<code>is_swing</code>÷<code>is_pitch</code>、ゾーン内率=<code>in_strike_zone</code>÷<code>is_pitch</code> を計算
+                    </div>
                 </div>
 
                 <div class="chart-container">
@@ -1213,15 +1448,64 @@
                         <span class="highlight">3-2（フルカウント）が74.4%で最高</span>、<span class="highlight">3-0が8.7%で最低</span>です。<br><br>
                         では次に、投手側の視点から「球種選択」を見ていきましょう。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        全12カウントのスイング率は <code>pre_ball</code> と <code>pre_strike</code> の組み合わせごとに <code>is_swing</code>÷<code>is_pitch</code> を計算。3-2カウントでは 8,347スイング ÷ 11,221投球 = 74.4%、3-0カウントでは 188スイング ÷ 2,166投球 = 8.7%
+                    </div>
                 </div>
             </section>
 
             <!-- セクション3: 球種選択 -->
             <section id="pitch" class="section">
+                <!-- データ紹介セクション -->
+                <div class="data-intro-section">
+                    <div class="data-stats-row">
+                        <div class="data-stat-card">
+                            <div class="label">⚡ ストレート</div>
+                            <div class="value">105,685</div>
+                            <div class="sub-label">全体の42.7%</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🌀 スライダー</div>
+                            <div class="value">34,569</div>
+                            <div class="sub-label">全体の14.0%</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🎣 フォーク</div>
+                            <div class="value">29,848</div>
+                            <div class="sub-label">全体の12.1%</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🔪 カットボール</div>
+                            <div class="value">23,831</div>
+                            <div class="sub-label">全体の9.6%</div>
+                        </div>
+                    </div>
+                    <div class="data-explanation-box">
+                        <span class="section-tag">🎤 発表</span>
+                        <p>
+                            このセクションでは、投手の球種選択について分析します。
+                        </p>
+                        <p>
+                            カウントによって投手がどの球種を選ぶ傾向があるかを、<code>pitch_type_name</code>（球種名）列のデータを使って分析しました。
+                        </p>
+                        <div class="data-source-note">
+                            <strong>📁 データソース：</strong><br>
+                            球種情報：<code>pitch_type_name</code>列（ストレート、スライダー、フォーク等）<br>
+                            球種グループ：<code>pitch_type_group</code>列（直球系、曲がる系、落ちる系）<br>
+                            球速：<code>pitch_speed</code>列（km/h）
+                        </div>
+                    </div>
+                </div>
+
                 <div class="presentation-script">
                     <p>
                         <span class="section-number">3</span>ここでは、カウントによって<span class="highlight">投手の球種選択</span>がどう変わるかを分析しました。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        球種別の投球数は <code>pitch_type_name</code> 列でグループ化、ストライク数別の集計は <code>pre_strike</code> 列で分類
+                    </div>
                 </div>
 
                 <div class="stats-row">
@@ -1253,6 +1537,10 @@
                         フォークの割合は0ストライク時の8.0%から、2ストライク時は<span class="highlight">17.4%</span>と2倍以上になります。<br>
                         逆にカーブは7.4%から5.1%に減少します。決め球としては使いにくいんですね。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        0ストライク時のフォーク比率（8.0%）：<code>pre_strike</code>=0 かつ <code>pitch_type_name</code>='フォーク' のデータ数（7,857球）÷ 0ストライク時の総投球数（98,372球）。2ストライク時のフォーク比率（17.4%）：12,857球 ÷ 73,787球
+                    </div>
                 </div>
 
                 <div class="chart-container">
@@ -1267,6 +1555,10 @@
                         このグラフを見ると、<span class="highlight">緑色のフォーク</span>が2ストライクで大きく増えているのがわかります。<br><br>
                         投手は追い込んでから変化球で仕留めるという戦略をとっているんですね。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        ストライク数別球種比率のグラフは、<code>pre_strike</code>（0,1,2）と <code>pitch_type_name</code> の組み合わせでグループ化し、各球種の投球数 ÷ そのストライク数の総投球数 × 100 で比率を計算
+                    </div>
                 </div>
 
                 <div class="chart-container">
@@ -1283,15 +1575,65 @@
                         投手は「とにかくストライクを取りたい」ので、コントロールしやすいストレートを選ぶんです。<br><br>
                         では最後に、まとめを見ていきましょう。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        カウント別ストレート比率は <code>pre_ball</code> と <code>pre_strike</code> の組み合わせごとに、<code>pitch_type_name</code>='ストレート' の投球数 ÷ 総投球数 で計算。3-0カウントでは 1,731球 ÷ 2,166球 = 79.9%
+                    </div>
                 </div>
             </section>
 
             <!-- セクション4: まとめ -->
             <section id="summary" class="section">
+                <!-- データ紹介セクション -->
+                <div class="data-intro-section">
+                    <div class="data-stats-row">
+                        <div class="data-stat-card">
+                            <div class="label">📊 打率の差</div>
+                            <div class="value">.083</div>
+                            <div class="sub-label">投手有利 vs 打者有利</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🏆 最高打率</div>
+                            <div class="value">.330</div>
+                            <div class="sub-label">3-1カウント</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">📉 最低打率</div>
+                            <div class="value">.146</div>
+                            <div class="sub-label">0-2カウント</div>
+                        </div>
+                        <div class="data-stat-card">
+                            <div class="label">🎯 分析項目</div>
+                            <div class="value">12</div>
+                            <div class="sub-label">全カウントパターン</div>
+                        </div>
+                    </div>
+                    <div class="data-explanation-box">
+                        <span class="section-tag">🎤 発表</span>
+                        <p>
+                            このセクションでは、これまでの分析結果をまとめます。
+                        </p>
+                        <p>
+                            投手有利・打者有利の違いを、打率、スイング率、球種選択の観点から総合的に比較しました。
+                        </p>
+                        <div class="data-source-note">
+                            <strong>📁 データソース：</strong><br>
+                            このまとめは、以下のCSV列を組み合わせて分析：<br>
+                            打撃成績：<code>is_h</code>, <code>is_ab</code>, <code>is_bb</code>, <code>is_so</code><br>
+                            スイング傾向：<code>is_swing</code>, <code>is_contact</code>, <code>in_strike_zone</code><br>
+                            球種選択：<code>pitch_type_name</code>, <code>pitch_type_group</code>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="presentation-script">
                     <p>
                         <span class="section-number">4</span>最後に、今回の分析で得られた<span class="highlight">主な発見</span>をまとめます。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        以下のまとめは全て <code>pre_ball</code>（ボール数）と <code>pre_strike</code>（ストライク数）でグループ化した各種指標の集計結果
+                    </div>
                 </div>
 
                 <div class="summary-card">
@@ -1335,6 +1677,10 @@
                         <span class="highlight">緑（打者有利）</span>は打率やゾーン内率、四球率が高く、<br>
                         <span class="highlight">赤（投手有利）</span>はスイング率が高いものの、結果につながっていないことがわかります。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 使用データ：</strong>
+                        レーダーチャートの5軸：打率=<code>is_h</code>÷<code>is_ab</code>（×300でスケール調整）、スイング率=<code>is_swing</code>÷<code>is_pitch</code>×100、コンタクト率=<code>is_contact</code>÷<code>is_swing</code>×100、ゾーン内率=<code>in_strike_zone</code>÷<code>is_pitch</code>×100、四球率=<code>is_bb</code>÷<code>is_pa</code>×100
+                    </div>
                 </div>
 
                 <div class="summary-card">
@@ -1354,6 +1700,10 @@
                         野球を観戦するとき、ぜひカウントに注目してみてください。<br><br>
                         ご清聴ありがとうございました。
                     </p>
+                    <div class="data-source-note">
+                        <strong>📁 分析の全体像：</strong>
+                        本分析では、2025年NPB一軍公式戦858試合、約25万球の投球データ（<code>play_info.csv</code>）を使用。主要な分析軸として <code>pre_ball</code>（投球前のボール数）と <code>pre_strike</code>（投球前のストライク数）を用い、打撃成績（<code>is_h</code>, <code>is_ab</code>等）、スイング傾向（<code>is_swing</code>, <code>is_contact</code>等）、球種選択（<code>pitch_type_name</code>）の3つの観点から分析を実施しました。
+                    </div>
                 </div>
             </section>
 
